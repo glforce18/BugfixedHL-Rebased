@@ -21,7 +21,7 @@ jobs:
         .\bootstrap-vcpkg.bat
 
     - name: Configure
-      run: cmake -B build -G "Visual Studio 16 2019" -A Win32 -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+      run: cmake -B build -G "Visual Studio 16 2019" -A Win32 -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x86-windows-static
 
     - name: Build client
       run: cmake --build build --config Release --target client
