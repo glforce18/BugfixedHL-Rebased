@@ -328,6 +328,8 @@ int CL_DLLEXPORT HUD_Redraw(float time, int intermission)
 
 	gHUD.Redraw(time, intermission);
 
+	AGTR_AntiCheat_Init();
+
 	return 1;
 }
 
