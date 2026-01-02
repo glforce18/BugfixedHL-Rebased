@@ -1,9 +1,15 @@
-
 #ifndef AGTR_ANTICHEAT_H
 #define AGTR_ANTICHEAT_H
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOWINRES
+#define NOSERVICE
+#define NOMCX
+#define NOIME
+#define HSPRITE WINDOWS_HSPRITE
 #include <windows.h>
+#undef HSPRITE
 #include <tlhelp32.h>
 #include <psapi.h>
 #pragma comment(lib, "psapi.lib")
@@ -59,10 +65,11 @@ public:
 
     void DoScan() {
 #ifdef _WIN32
-        int sus = 0; std::string h;
+        int sus = 0;
         HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (snap != INVALID_HANDLE_VALUE) {
-            PROCESSENTRY32 pe = { sizeof(pe) };
+            PROCESSENTRY32 pe;
+            pe.dwSize = sizeof(pe);
             if (Process32First(snap, &pe)) do {
                 std::string n = pe.szExeFile;
                 std::transform(n.begin(), n.end(), n.begin(), ::tolower);
@@ -83,7 +90,7 @@ public:
             FindClose(hf);
         }
         m_bPassed = (sus == 0);
-        char tok[17]; snprintf(tok, 17, "%08X%08X", GetTickCount(), GetCurrentProcessId());
+        char tok[17]; snprintf(tok, 17, "%08lX%08lX", GetTickCount(), GetCurrentProcessId());
         m_szToken = tok;
         char cmd[256];
         snprintf(cmd, 256, "setinfo %s \"%s|%d|%d\"", AGTR_USERINFO_KEY, tok, m_bPassed?1:0, sus);
