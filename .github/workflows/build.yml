@@ -14,8 +14,14 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
+    - name: Setup vcpkg
+      run: |
+        cd $env:VCPKG_INSTALLATION_ROOT
+        git pull
+        .\bootstrap-vcpkg.bat
+
     - name: Configure
-      run: cmake -B build -G "Visual Studio 16 2019" -A Win32
+      run: cmake -B build -G "Visual Studio 16 2019" -A Win32 -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
 
     - name: Build client
       run: cmake --build build --config Release --target client
