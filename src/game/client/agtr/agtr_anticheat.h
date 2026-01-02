@@ -1,1 +1,100 @@
 
+#ifndef AGTR_ANTICHEAT_H
+#define AGTR_ANTICHEAT_H
+
+#ifdef _WIN32
+#include <windows.h>
+#include <tlhelp32.h>
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
+#endif
+
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <sstream>
+
+#define AGTR_SCAN_INTERVAL 60.0f
+#define AGTR_INITIAL_DELAY 3.0f
+#define AGTR_USERINFO_KEY "_agtrac"
+
+static const char* g_SusProcesses[] = {
+    "cheatengine", "artmoney", "ollydbg", "x64dbg", "processhacker",
+    "injector", "trainer", "hack", "aimbot", "wallhack", nullptr
+};
+
+static const char* g_SusDLLs[] = { "opengl32.dll", "d3d9.dll", "d3d10.dll", "dinput8.dll", nullptr };
+
+static const char* g_SusKeywords[] = {
+    "hack", "cheat", "aimbot", "wallhack", "esp", "inject",
+    "ssw", "plwh", "ogc", "radoom", "demoplayer", nullptr
+};
+
+class CAGTRAntiCheat
+{
+public:
+    bool m_bInit = false, m_bPassed = false;
+    float m_flNext = 0;
+    int m_iCount = 0;
+    std::string m_szToken, m_szDir;
+
+    void Initialize() {
+        if (m_bInit) return;
+#ifdef _WIN32
+        char p[MAX_PATH]; GetModuleFileNameA(NULL, p, MAX_PATH);
+        char* s = strrchr(p, '\\'); if (s) *s = 0;
+        m_szDir = p;
+#endif
+        m_flNext = gEngfuncs.GetClientTime() + AGTR_INITIAL_DELAY;
+        m_bInit = true;
+    }
+
+    void Shutdown() { m_bInit = false; }
+
+    void Think() {
+        if (!m_bInit) return;
+        float t = gEngfuncs.GetClientTime();
+        if (m_flNext > 0 && t >= m_flNext) { DoScan(); m_flNext = t + AGTR_SCAN_INTERVAL; m_iCount++; }
+    }
+
+    void DoScan() {
+#ifdef _WIN32
+        int sus = 0; std::string h;
+        HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (snap != INVALID_HANDLE_VALUE) {
+            PROCESSENTRY32 pe = { sizeof(pe) };
+            if (Process32First(snap, &pe)) do {
+                std::string n = pe.szExeFile;
+                std::transform(n.begin(), n.end(), n.begin(), ::tolower);
+                for (int i = 0; g_SusProcesses[i]; i++)
+                    if (n.find(g_SusProcesses[i]) != std::string::npos) { sus++; break; }
+            } while (Process32Next(snap, &pe));
+            CloseHandle(snap);
+        }
+        WIN32_FIND_DATAA fd;
+        HANDLE hf = FindFirstFileA((m_szDir + "\\*.dll").c_str(), &fd);
+        if (hf != INVALID_HANDLE_VALUE) {
+            do {
+                std::string fn = fd.cFileName;
+                std::transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
+                for (int i = 0; g_SusDLLs[i]; i++) if (fn == g_SusDLLs[i]) sus++;
+                for (int i = 0; g_SusKeywords[i]; i++) if (fn.find(g_SusKeywords[i]) != std::string::npos) { sus++; break; }
+            } while (FindNextFileA(hf, &fd));
+            FindClose(hf);
+        }
+        m_bPassed = (sus == 0);
+        char tok[17]; snprintf(tok, 17, "%08X%08X", GetTickCount(), GetCurrentProcessId());
+        m_szToken = tok;
+        char cmd[256];
+        snprintf(cmd, 256, "setinfo %s \"%s|%d|%d\"", AGTR_USERINFO_KEY, tok, m_bPassed?1:0, sus);
+        gEngfuncs.pfnClientCmd(cmd);
+#endif
+    }
+};
+
+static CAGTRAntiCheat g_AGTRAntiCheat;
+inline void AGTR_AntiCheat_Init() { g_AGTRAntiCheat.Initialize(); }
+inline void AGTR_AntiCheat_Shutdown() { g_AGTRAntiCheat.Shutdown(); }
+inline void AGTR_AntiCheat_Think() { g_AGTRAntiCheat.Think(); }
+
+#endif
