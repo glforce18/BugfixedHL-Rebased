@@ -285,6 +285,7 @@ int CL_DLLEXPORT HUD_VidInit(void)
 	PM_ResetUseSlowDownDetection();
 	CResults::Get().Stop();
 	GetClientVoiceMgr()->VidInit();
+	
 
 	return 1;
 }
@@ -311,6 +312,7 @@ void CL_DLLEXPORT HUD_Init(void)
 	CSvcMessages::Get().Init();
 	EngFuncs_UpdateHooks();
 	console::HudPostInit();
+	AGTR_AntiCheat_Init();
 }
 
 /*
@@ -327,8 +329,7 @@ int CL_DLLEXPORT HUD_Redraw(float time, int intermission)
 	//	RecClHudRedraw(time, intermission);
 
 	gHUD.Redraw(time, intermission);
-
-	AGTR_AntiCheat_Init();
+	AGTR_AntiCheat_Think();
 
 	return 1;
 }
