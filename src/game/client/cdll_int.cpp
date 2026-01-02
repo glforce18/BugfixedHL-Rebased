@@ -29,6 +29,7 @@
 #include <pm_shared.h>
 #include "hud.h"
 #include "cl_util.h"
+#include "agtr/agtr_anticheat.h"
 #include "tri.h"
 #include "cl_voice_status.h"
 #include "hud/spectator.h"
